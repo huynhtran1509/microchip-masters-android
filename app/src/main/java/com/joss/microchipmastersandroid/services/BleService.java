@@ -75,21 +75,7 @@ public class BleService extends Service {
     }
 
     public void initialize(BleInterface bleInterface){
-        this.isInitialized = true;
-        this.bleInterface = bleInterface;
-        bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-        leScanCallback = new AppsLeScanCallback();
 
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            scanCallback = new AppsScanCallback();
-
-            if(isBluetoothEnabled()){
-                bluetoothScanner = bluetoothAdapter.getBluetoothLeScanner();
-            }else{
-                bleInterface.onBleDisabled();
-                this.isInitialized = false;
-            }
-        }
     }
 
     /**
@@ -97,49 +83,14 @@ public class BleService extends Service {
      */
     public void startScanning(){
         startBluetoothCrashResolver();
-        if(!isScanning){
-            if(isBluetoothEnabled()){
-                isScanning = true;
-                bleInterface.onScanningStarted();
 
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-
-//                    List<ScanFilter> filters = new ArrayList<>();
-//                    filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(UUID_SERVICE)).build());
-
-                    ScanSettings scanSettings = new ScanSettings.Builder()
-                            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-                            .setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-                            .build();
-//                    bluetoothScanner.startScan(filters, scanSettings, scanCallback);
-                    bluetoothScanner.startScan(null, scanSettings, scanCallback);
-                }else{
-                    bluetoothAdapter.startLeScan(leScanCallback);
-                }
-            }else{
-                bleInterface.onBleDisabled();
-            }
-        }
     }
 
     /**
      * Stop Scanning
      */
     public void stopScanning(){
-        if(isScanning){
-            if(isBluetoothEnabled()){
-                isScanning = false;
-                bleInterface.onScanningStopped();
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    bluetoothScanner.stopScan(scanCallback);
-                }else{
-                    bluetoothAdapter.stopLeScan(leScanCallback);
-                }
-            }else{
-                bleInterface.onBleDisabled();
-                isInitialized = false;
-            }
-        }
+
     }
 
     /**
@@ -154,12 +105,6 @@ public class BleService extends Service {
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
 
-//            List<UUID> uuids = BleUtils.parseUuids(scanRecord);
-//            for(UUID u : uuids){
-//                if(u.equals(UUID_SERVICE)){
-                    bleInterface.onBleScan(device);
-//                }
-//            }
         }
     }
 
@@ -180,15 +125,6 @@ public class BleService extends Service {
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
 
-//            if(result.getScanRecord() != null && result.getScanRecord().getServiceUuids() != null){
-//                for(ParcelUuid parcelUuid : result.getScanRecord().getServiceUuids()){
-//                    if(parcelUuid.getUuid().equals(GattServiceAttributes.UUID_SERVICE)){
-                        BluetoothDevice device = result.getDevice();
-                        bleInterface.onBleScan(device);
-//                        break;
-//                    }
-//                }
-//            }
         }
 
         @Override
@@ -204,46 +140,7 @@ public class BleService extends Service {
         @Override
         public void onScanFailed(int errorCode) {
             super.onScanFailed(errorCode);
-            bleInterface.onBleScanFailed(String.valueOf(errorCode));
-        }
-    }
 
-    /**
-     * Connect
-     *
-     * Attempt to connect (or reconnect) to device
-     *
-     * @param address MAC Address of device attempting to connect to.
-     * @return true or false depending on whether or not connection started
-     */
-    public boolean connect(final String address) {
-        if (bluetoothAdapter == null || address == null) {
-            return false;
-        }
-
-        // Check to see if bluetooth is still enabled on device.
-        if(isBluetoothEnabled()){
-
-            // If already connected to another device disconnect before connecting to a new one.
-            if(isConnected()){
-                disconnect();
-            }
-
-            // If it's a previously connected device. Try to reconnect.
-            if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress) && bluetoothGatt != null) {
-                return bluetoothGatt.connect();
-            }
-
-            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-
-            bluetoothGatt = device.connectGatt(this, false, bleCallback);
-            bleInterface.onConnectingToDevice();
-            bluetoothDeviceAddress = address;
-
-            return true;
-        }else{
-            bleInterface.onBleDisabled();
-            return false;
         }
     }
 
@@ -285,33 +182,10 @@ public class BleService extends Service {
             switch (newState){
                 case BluetoothProfile.STATE_CONNECTED:
 
-                    // Persist Mac Address && Device Name
-                    DataStore.persistBleDeviceMacAddress(BleService.this, gatt.getDevice().getAddress());
-                    DataStore.persistBleDeviceName(BleService.this, gatt.getDevice().getName());
-
-                    // Start delayed discovering devices
-                    new Handler().postDelayed(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (bluetoothGatt != null && isConnected())
-                                bluetoothGatt.discoverServices();
-                        }
-                    }, SERVICE_DISCOVERY_DELAY);
-
-                    // Toggle and reset flags
-                    isConnected = true;
-
-                    // Send Broadcast to update UI
-                    bleInterface.onConnected();
                     break;
 
                 case BluetoothProfile.STATE_DISCONNECTED:
 
-                    // Send Broadcast to update UI
-                    bleInterface.onDisconnected();
-
-                    // Toggle and reset flags
-                    isConnected = false;
                     break;
             }
         }

@@ -55,41 +55,25 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
     protected void onResume(){
         super.onResume();
 
-        // Bind to ble service
-        Intent intent= new Intent(this, BleService.class);
-        bindService(intent, bleConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onPause(){
         super.onPause();
-        if(bleService != null){
-            bleService.stopScanning();
-            bleService.disconnect();
-            unbindService(bleConnection);
-        }
+
     }
 
     public void onStartScanningButtonClicked(View view){
-        if(bleService != null && bleService.isInitialized() && !bleService.isScanning()){
-            if(bleService.isBluetoothEnabled()){
-                bleService.startScanning();
-                showLoading();
-            }else {
-                Toast.makeText(this, "Bluetooth not turned on", Toast.LENGTH_SHORT).show();
-            }
-        }
+
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder binder) {
-            BleService.MicrochipBinder b = (BleService.MicrochipBinder) binder;
-            bleService = b.getService();
-            bleService.initialize(MainActivity.this);
+
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            bleService = null;
+
         }
     }
 
@@ -100,9 +84,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     @Override
     public void onBleScan(BluetoothDevice device) {
-        if(adapter.getCount() == 0)
-            showContent();
-        adapter.addDevice(device);
+
     }
 
     @Override
