@@ -59,10 +59,7 @@ public class BleConnectActivity extends Activity implements BleInterface {
         button4 = (TextView) findViewById(R.id.ble_connect_button_4);
 
         // Get the serialized ble device object
-        bluetoothDevice = GGson.fromJson(getIntent().getStringExtra(BLE_DEVICE), BluetoothDevice.class);
 
-        bleConnection = new MicrochipBleConnection();
-        handler = new Handler();
     }
 
     @Override
@@ -70,48 +67,35 @@ public class BleConnectActivity extends Activity implements BleInterface {
         super.onResume();
 
         // Bind to ble service
-        Intent intent= new Intent(this, BleService.class);
-        bindService(intent, bleConnection, Context.BIND_AUTO_CREATE);
+
     }
 
     @Override
     public void onPause(){
         super.onPause();
 
-        if(bleService != null){
-            bleService.disconnect();
-            unbindService(bleConnection);
-        }
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder binder) {
-            BleService.MicrochipBinder b = (BleService.MicrochipBinder) binder;
-            bleService = b.getService();
-            bleService.initialize(BleConnectActivity.this);
-            connect(bluetoothDevice);
+
         }
 
         public void onServiceDisconnected(ComponentName className) {
-            bleService = null;
+
         }
     }
 
     private void connect(BluetoothDevice bluetoothDevice) {
-        if(bleService != null && bleService.isInitialized() && bluetoothDevice != null){
-            bleService.connect(bluetoothDevice);
-        }
+
     }
 
     @Override
-    public void onButtonStateChanged(final boolean b1, final boolean b2, final boolean b3, final boolean b4) {
+    public void onButtonStateChanged(final Status status) {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                button1.setText(b1 ? "ON" : "OFF");
-                button2.setText(b2 ? "ON" : "OFF");
-                button3.setText(b3 ? "OFF" : "ON");
-                button4.setText(b4 ? "ON" : "OFF");
+
             }
         });
     }
@@ -146,7 +130,7 @@ public class BleConnectActivity extends Activity implements BleInterface {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                status.setText("Not Connected");
+
             }
         });
     }
@@ -156,7 +140,7 @@ public class BleConnectActivity extends Activity implements BleInterface {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                status.setText("Connecting");
+
             }
         });
     }
@@ -166,7 +150,7 @@ public class BleConnectActivity extends Activity implements BleInterface {
         handler.post(new Runnable() {
             @Override
             public void run() {
-                status.setText("Connected");
+
             }
         });
     }

@@ -2,6 +2,8 @@ package com.joss.microchipmastersandroid.services;
 
 import android.bluetooth.BluetoothDevice;
 
+import com.joss.microchipmastersandroid.models.Status;
+
 /**
  * Created by: WillowTree
  * Date: 1/12/15
@@ -25,5 +27,5 @@ public interface BleInterface {
 
     void onConnected();
 
-    void onButtonStateChanged(boolean button1, boolean button2, boolean button3, boolean button4);
+    void onButtonStateChanged(Status status);
 }

@@ -18,6 +18,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.joss.microchipmastersandroid.R;
+import com.joss.microchipmastersandroid.models.Status;
 import com.joss.microchipmastersandroid.services.BleInterface;
 import com.joss.microchipmastersandroid.services.BleService;
 import com.joss.microchipmastersandroid.views.BluetoothDeviceView;
@@ -48,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
         adapter = new BleAdapter(this);
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(adapter);
-        listView.setOnItemClickListener(this);
+
 
         bleConnection = new MicrochipBleConnection();
     }
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        BleConnectActivity.startBleConnectActivity(this, adapter.devices.get(position));
+
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
@@ -143,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
     }
 
     @Override
-    public void onButtonStateChanged(boolean button1, boolean button2, boolean button3, boolean button4) {
+    public void onButtonStateChanged(Status status) {
 
     }
 
