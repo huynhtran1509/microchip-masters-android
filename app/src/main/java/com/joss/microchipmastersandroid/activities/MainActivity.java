@@ -10,6 +10,7 @@ import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.ListView;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements BleInterface{
+public class MainActivity extends AppCompatActivity implements BleInterface, AdapterView.OnItemClickListener {
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -47,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         adapter = new BleAdapter(this);
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(adapter);
+        listView.setOnItemClickListener(this);
 
         bleConnection = new MicrochipBleConnection();
     }
@@ -79,6 +81,11 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
                 Toast.makeText(this, "Bluetooth not turned on", Toast.LENGTH_SHORT).show();
             }
         }
+    }
+
+    @Override
+    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+        BleConnectActivity.startBleConnectActivity(this, adapter.devices.get(position));
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
