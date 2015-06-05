@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="@dimen/activity_horizontal_margin">
+
+    <RelativeLayout
+        android:id="@+id/ble_connect_loading_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:visibility="gone">
+
+        <ProgressBar
+            android:id="@+id/ble_connect_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            />
+
+        <TextView
+            android:id="@+id/ble_connect_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Attempting to connect to Device"
+            android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+            android:layout_centerHorizontal="true"
+            android:layout_above="@id/ble_connect_progress"
+            />
+
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/ble_connect_status"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Connected"
+        android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+        />
+
+    <TextView
+        android:id="@+id/ble_connect_button_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button 1:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        />
+
+    <TextView
+        android:id="@+id/ble_connect_button_2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button 2:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        />
+
+    <TextView
+        android:id="@+id/ble_connect_button_3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button 3:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        />
+
+    <TextView
+        android:id="@+id/ble_connect_button_4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Button 4:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        />
+</LinearLayout>

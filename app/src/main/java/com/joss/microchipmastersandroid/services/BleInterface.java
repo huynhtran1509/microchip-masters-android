@@ -25,4 +25,5 @@ public interface BleInterface {
 
     void onConnected();
 
+    void onButtonStateChanged(boolean button1, boolean button2, boolean button3, boolean button4);
 }

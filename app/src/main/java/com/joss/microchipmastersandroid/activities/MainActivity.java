@@ -135,6 +135,11 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     }
 
+    @Override
+    public void onButtonStateChanged(boolean button1, boolean button2, boolean button3, boolean button4) {
+
+    }
+
     class BleAdapter extends BaseAdapter{
 
         Context context;

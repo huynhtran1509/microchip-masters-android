@@ -6,6 +6,9 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
+import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothProfile;
 import android.bluetooth.le.BluetoothLeScanner;
 import android.bluetooth.le.ScanCallback;
@@ -21,8 +24,12 @@ import android.util.Log;
 
 import com.joss.microchipmastersandroid.persistance.DataStore;
 import com.joss.microchipmastersandroid.MainApp;
+import com.joss.microchipmastersandroid.utils.BleUtils;
 
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.UUID;
 
 /**
  * Created by: WillowTree
@@ -33,6 +40,10 @@ public class BleService extends Service {
     private final static String TAG = BleService.class.getSimpleName();
 
     private static final int SERVICE_DISCOVERY_DELAY = 1000;
+
+    private UUID UUID_SERVICE = GattServiceAttributes.UUID_SERVICE;
+    private UUID UUID_CHARACTERISTIC_GENERIC = GattServiceAttributes.UUID_CHARACTERITIC_GENERIC;
+    private UUID UUID_CHARACTERISTIC_BUTTONS = GattServiceAttributes.UUID_CHARACTERISTIC_BUTTONS;
 
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothLeScanner bluetoothScanner;
@@ -50,6 +61,8 @@ public class BleService extends Service {
     private BleInterface bleInterface;
 
     private final BluetoothGattCallback bleCallback = new AppsBluetoothGattCallback();
+    private Queue<BluetoothGattCharacteristic> readCharacteristicQueue = new LinkedList<>();
+    private Queue<BluetoothGattDescriptor> descriptorQueue = new LinkedList<>();
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -153,13 +166,7 @@ public class BleService extends Service {
          */
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-
-//            List<UUID> uuids = BleUtils.parseUuids(scanRecord);
-//            for(UUID u : uuids){
-//                if(u.equals(UUID_SERVICE)){
-                    bleInterface.onBleScan(device);
-//                }
-//            }
+                bleInterface.onBleScan(device);
         }
     }
 
@@ -179,16 +186,8 @@ public class BleService extends Service {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-
-//            if(result.getScanRecord() != null && result.getScanRecord().getServiceUuids() != null){
-//                for(ParcelUuid parcelUuid : result.getScanRecord().getServiceUuids()){
-//                    if(parcelUuid.getUuid().equals(GattServiceAttributes.UUID_SERVICE)){
-                        BluetoothDevice device = result.getDevice();
-                        bleInterface.onBleScan(device);
-//                        break;
-//                    }
-//                }
-//            }
+                BluetoothDevice device = result.getDevice();
+                bleInterface.onBleScan(device);
         }
 
         @Override
@@ -213,11 +212,11 @@ public class BleService extends Service {
      *
      * Attempt to connect (or reconnect) to device
      *
-     * @param address MAC Address of device attempting to connect to.
+     * @param device Device attempting to connect to.
      * @return true or false depending on whether or not connection started
      */
-    public boolean connect(final String address) {
-        if (bluetoothAdapter == null || address == null) {
+    public boolean connect(final BluetoothDevice device) {
+        if (bluetoothAdapter == null || device == null) {
             return false;
         }
 
@@ -230,15 +229,16 @@ public class BleService extends Service {
             }
 
             // If it's a previously connected device. Try to reconnect.
-            if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress) && bluetoothGatt != null) {
+            if (bluetoothDeviceAddress != null
+                    && bluetoothGatt != null
+                    && device.getAddress().equals(bluetoothDeviceAddress)) {
+
                 return bluetoothGatt.connect();
             }
 
-            final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-
             bluetoothGatt = device.connectGatt(this, false, bleCallback);
             bleInterface.onConnectingToDevice();
-            bluetoothDeviceAddress = address;
+            bluetoothDeviceAddress = device.getAddress();
 
             return true;
         }else{
@@ -315,6 +315,135 @@ public class BleService extends Service {
                     break;
             }
         }
+
+        /**
+         * Callback invoked when the list of remote services, characteristics and descriptors
+         * for the remote device have been updated, ie new services have been discovered.
+         *
+         * Queue up characteristics to read
+         *
+         * @param gatt Gatt client invoked {@link BluetoothGatt#discoverServices}
+         * @param status {@link BluetoothGatt#GATT_SUCCESS} if the remote device
+         *               has been explored successfully.
+         */
+        @Override
+        public void onServicesDiscovered(BluetoothGatt gatt, int status){
+
+            // Check to see if services got discovered successfully
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+
+                // Loop through the services and queue characteristics to read
+                for(BluetoothGattService service : gatt.getServices()){
+                    if(service.getUuid().equals(UUID_SERVICE)){
+                        readGattCharacteristic(service.getCharacteristic(UUID_CHARACTERISTIC_BUTTONS));
+                    }
+                }
+            }
+        }
+
+        /**
+         * Callback reporting the result of a characteristic read operation.
+         *
+         * Read the next characteristic on the queue if there are any left.
+         *
+         * @param gatt Gatt client invoked {@link BluetoothGatt#readCharacteristic}
+         * @param characteristic Characteristic that was read from the associated
+         *                       remote device.
+         * @param status {@link BluetoothGatt#GATT_SUCCESS} if the read operation
+         *               was completed successfully.
+         */
+        @Override
+        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status){
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+
+                if(characteristic.getUuid().equals(UUID_CHARACTERISTIC_BUTTONS)){
+                    registerCharacteristic(characteristic);
+                }
+
+                readCharacteristicQueue.remove();
+                if(readCharacteristicQueue.size() > 0){
+                    gatt.readCharacteristic(readCharacteristicQueue.element());
+                }else if(descriptorQueue.size() > 0){
+                    bluetoothGatt.writeDescriptor(descriptorQueue.element());
+                }
+            }
+        }
+
+        /**
+         * Callback indicating the result of a descriptor write operation.
+         *
+         * Write the next queued up descriptor if any.
+         *
+         * @param gatt Gatt client invoked {@link BluetoothGatt#writeDescriptor}
+         * @param descriptor Descriptor that was writte to the associated
+         *                   remote device.
+         * @param status The result of the write operation
+         *               {@link BluetoothGatt#GATT_SUCCESS} if the operation succeeds.
+         */
+        @Override
+        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
+            descriptorQueue.remove();
+            if(descriptorQueue.size() > 0){
+                bluetoothGatt.writeDescriptor(descriptorQueue.element());
+            }
+        }
+
+        /**
+         * Callback triggered as a result of a remote characteristic notification.
+         *
+         * @param gatt Gatt client the characteristic is associated with
+         * @param characteristic Characteristic that has been updated as a result
+         *                       of a remote notification event.
+         */
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
+            if(characteristic.getUuid().equals(UUID_CHARACTERISTIC_BUTTONS)){
+                String buttons = BleUtils.bytesToHexString(characteristic.getValue());
+                bleInterface.onButtonStateChanged(
+                        buttons.charAt(0) == '1',
+                        buttons.charAt(1) == '1',
+                        buttons.charAt(2) == '1',
+                        buttons.charAt(3) == '1');
+            }
+        }
+    }
+
+    /**
+     * Add characteristic to read queue, if there is only 1 characteristic on the queue start
+     * reading the characteristic value.
+     *
+     * @param characteristic Bluetooth characteristic
+     */
+    public void readGattCharacteristic(BluetoothGattCharacteristic characteristic){
+        readCharacteristicQueue.add(characteristic);
+        if(readCharacteristicQueue.size() == 1){
+            bluetoothGatt.readCharacteristic(characteristic);
+        }
+    }
+
+    /**
+     * Register to receive notifications from a particular Bluetooth Gatt Characteristic
+     *
+     * @param characteristic Bluetooth Gatt Characteristic to register to
+     */
+    private void registerCharacteristic(BluetoothGattCharacteristic characteristic) {
+        if (bluetoothAdapter == null || bluetoothGatt == null) {
+            return;
+        }
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID_CHARACTERISTIC_GENERIC);
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+        writeGattDescriptor(descriptor);
+        bluetoothGatt.setCharacteristicNotification(characteristic, true);
+    }
+
+    /**
+     * Add Bluetooth Gatt descriptor to a queue to register to receive notifications
+     *
+     * @param descriptor Bluetooth Gatt Descriptor
+     */
+    public void writeGattDescriptor(BluetoothGattDescriptor descriptor){
+        //put the descriptor into the write queue
+        descriptorQueue.add(descriptor);
     }
 
     /**
