@@ -75,7 +75,22 @@ public class BleService extends Service {
     }
 
     public void initialize(BleInterface bleInterface){
+        this.isInitialized = true;
+        this.bleInterface = bleInterface;
+        this.bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            this.scanCallback = new AppsScanCallback();
+
+            if (isBluetoothEnabled()) {
+                bluetoothScanner = bluetoothAdapter.getBluetoothLeScanner();
+            } else {
+                bleInterface.onBleDisabled();
+                this.isInitialized = false;
+            }
+        } else {
+            this.leScanCallback = new AppsLeScanCallback();
+        }
     }
 
     /**
@@ -83,14 +98,43 @@ public class BleService extends Service {
      */
     public void startScanning(){
         startBluetoothCrashResolver();
+        if (!isScanning) {
+            if (isBluetoothEnabled()) {
+                isScanning = true;
+                bleInterface.onScanningStarted();
 
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    ScanSettings scanSettings = new ScanSettings.Builder()
+                            .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                            .setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                            .build();
+                    bluetoothScanner.startScan(null, scanSettings, scanCallback);
+                } else {
+                    bluetoothAdapter.startLeScan(leScanCallback);
+                }
+            }
+        }
     }
 
     /**
      * Stop Scanning
      */
     public void stopScanning(){
+        if (isScanning) {
+            if (isBluetoothEnabled()) {
+                isScanning = false;
+                bleInterface.onScanningStopped();
 
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    bluetoothScanner.stopScan(scanCallback);
+                } else {
+                    bluetoothAdapter.stopLeScan(leScanCallback);
+                }
+            } else {
+                bleInterface.onBleDisabled();
+                isInitialized = false;
+            }
+        }
     }
 
     /**
@@ -104,7 +148,7 @@ public class BleService extends Service {
          */
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-
+            bleInterface.onBleScan(device);
         }
     }
 
@@ -124,7 +168,7 @@ public class BleService extends Service {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
-
+            bleInterface.onBleScan(result.getDevice());
         }
 
         @Override

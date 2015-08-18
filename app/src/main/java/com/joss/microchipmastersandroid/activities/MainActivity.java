@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -36,12 +37,14 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     BleService bleService;
     MicrochipBleConnection bleConnection;
+    Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        handler = new Handler();
         progressBar = (ProgressBar) findViewById(R.id.progress_bar);
         startScanningButton = (Button) findViewById(R.id.start_scanning_button);
         adapter = new BleAdapter(this);
@@ -55,25 +58,42 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
     protected void onResume(){
         super.onResume();
 
+        // Bind to the BLE Service
+        Intent i = new Intent(this, BleService.class);
+        bindService(i, bleConnection, Context.BIND_AUTO_CREATE);
     }
 
     @Override
     protected void onPause(){
         super.onPause();
 
+        if (bleService != null) {
+            bleService.stopScanning();
+            bleService.disconnect();
+            unbindService(bleConnection);
+        }
     }
 
     public void onStartScanningButtonClicked(View view){
-
+        if (bleService != null && bleService.isInitialized() && !bleService.isScanning()) {
+            if (bleService.isBluetoothEnabled()) {
+                bleService.startScanning();
+                showLoading();
+            } else {
+                Toast.makeText(this, "Bluetooth not turned on", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder binder) {
-
+            BleService.MicrochipBinder b = (BleService.MicrochipBinder) binder;
+            bleService = b.getService();
+            bleService.initialize(MainActivity.this);
         }
 
         public void onServiceDisconnected(ComponentName className) {
-
+            bleService = null;
         }
     }
 
@@ -83,8 +103,16 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
     }
 
     @Override
-    public void onBleScan(BluetoothDevice device) {
-
+    public void onBleScan(final BluetoothDevice device) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                adapter.addDevice(device);
+                if (adapter.getCount() > 0) {
+                    showContent();
+                }
+            }
+        });
     }
 
     @Override
@@ -99,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     @Override
     public void onScanningStopped() {
-
+        showButton();
     }
 
     @Override
@@ -130,8 +158,8 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         public void addDevice(BluetoothDevice d){
             if(!devices.contains(d)){
                 devices.add(d);
-                this.notifyDataSetChanged();
             }
+            this.notifyDataSetChanged();
         }
 
         @Override
@@ -162,18 +190,15 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
     private void showButton(){
         startScanningButton.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.GONE);
-        listView.setVisibility(View.INVISIBLE);
     }
 
     private void showLoading(){
         startScanningButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.VISIBLE);
-        listView.setVisibility(View.INVISIBLE);
     }
 
     private void showContent(){
         startScanningButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
-        listView.setVisibility(View.VISIBLE);
     }
 }
