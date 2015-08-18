@@ -64,6 +64,7 @@ public class BleService extends Service {
     private final BluetoothGattCallback bleCallback = new AppsBluetoothGattCallback();
     private Queue<BluetoothGattCharacteristic> readCharacteristicQueue = new LinkedList<>();
     private Queue<BluetoothGattDescriptor> descriptorQueue = new LinkedList<>();
+    private Handler handler;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -89,6 +90,7 @@ public class BleService extends Service {
     }
 
     public void initialize(BleInterface bleInterface){
+        this.handler = new Handler();
         this.isInitialized = true;
         this.bleInterface = bleInterface;
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -222,7 +224,26 @@ public class BleService extends Service {
         }
 
         // Check to see if bluetooth is still enabled on device.
-        return false;
+        if (isBluetoothEnabled()) {
+
+            if (isConnected()
+                    && bluetoothDeviceAddress != null
+                    && bluetoothGatt != null
+                    && device.getAddress().equals(bluetoothDeviceAddress)) {
+                return true;
+            } else if(isConnected()) {
+                disconnect();
+            }
+
+            bluetoothGatt = device.connectGatt(this, false, bleCallback);
+            bleInterface.onConnectingToDevice();
+            bluetoothDeviceAddress = device.getAddress();
+
+            return true;
+        } else {
+            bleInterface.onBleDisabled();
+            return false;
+        }
     }
 
     /**
@@ -260,7 +281,36 @@ public class BleService extends Service {
          */
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState){
+            switch (newState) {
+                case BluetoothProfile.STATE_CONNECTED:
 
+                    // Persist
+                    DataStore.persistBleDeviceMacAddress(BleService.this, gatt.getDevice().getAddress());
+                    DataStore.persistBleDeviceName(BleService.this, gatt.getDevice().getName());
+
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (bluetoothGatt != null && isConnected()) {
+                                bluetoothGatt.discoverServices();
+                            }
+                        }
+                    }, SERVICE_DISCOVERY_DELAY);
+
+                    isConnected = true;
+
+                    bleInterface.onConnected();
+
+                    break;
+
+                case BluetoothProfile.STATE_DISCONNECTED:
+
+                    bleInterface.onDisconnected();
+
+                    isConnected = false;
+
+                    break;
+            }
         }
 
         /**
@@ -277,8 +327,16 @@ public class BleService extends Service {
         public void onServicesDiscovered(BluetoothGatt gatt, int status){
 
             // Check to see if services got discovered successfully
+            if (status == BluetoothGatt.GATT_SUCCESS) {
 
                 // Loop through the services and queue characteristics to read
+                for (BluetoothGattService service : gatt.getServices()) {
+                    if (service.getUuid().equals(UUID_SERVICE)) {
+                        readGattCharacteristic(
+                                service.getCharacteristic(UUID_CHARACTERISTIC_BUTTONS));
+                    }
+                }
+            }
 
         }
 
@@ -294,8 +352,22 @@ public class BleService extends Service {
          *               was completed successfully.
          */
         @Override
-        public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status){
+        public void onCharacteristicRead(BluetoothGatt gatt,
+                                         BluetoothGattCharacteristic characteristic,
+                                         int status){
+            if (status == BluetoothGatt.GATT_SUCCESS) {
 
+                if (characteristic.getUuid().equals(UUID_CHARACTERISTIC_BUTTONS)) {
+                    registerCharacteristic(characteristic);
+                }
+
+                readCharacteristicQueue.remove();
+                if (readCharacteristicQueue.size() > 0) {
+                     gatt.readCharacteristic(readCharacteristicQueue.element());
+                } else if (descriptorQueue.size() > 0) {
+                    bluetoothGatt.writeDescriptor(descriptorQueue.element());
+                }
+            }
         }
 
         /**
@@ -310,8 +382,13 @@ public class BleService extends Service {
          *               {@link BluetoothGatt#GATT_SUCCESS} if the operation succeeds.
          */
         @Override
-        public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-
+        public void onDescriptorWrite(BluetoothGatt gatt,
+                                      BluetoothGattDescriptor descriptor,
+                                      int status) {
+            descriptorQueue.remove();
+            if (descriptorQueue.size() > 0) {
+                bluetoothGatt.writeDescriptor(descriptorQueue.element());
+            }
         }
 
         /**
@@ -322,8 +399,19 @@ public class BleService extends Service {
          *                       of a remote notification event.
          */
         @Override
-        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
+        public void onCharacteristicChanged(BluetoothGatt gatt,
+                                            BluetoothGattCharacteristic characteristic){
+            if (characteristic.getUuid().equals(UUID_CHARACTERISTIC_BUTTONS)) {
+                String buttons = BleUtils.bytesToHexString(characteristic.getValue());
 
+                Status status = new Status();
+                status.button1 = buttons.charAt(0) == '1';
+                status.button2 = buttons.charAt(1) == '1';
+                status.button3 = buttons.charAt(2) == '1';
+                status.button4 = buttons.charAt(3) == '1';
+
+                bleInterface.onButtonStateChanged(status);
+            }
         }
     }
 
@@ -334,7 +422,10 @@ public class BleService extends Service {
      * @param characteristic Bluetooth characteristic
      */
     public void readGattCharacteristic(BluetoothGattCharacteristic characteristic){
-
+        readCharacteristicQueue.add(characteristic);
+        if (readCharacteristicQueue.size() == 1) {
+            bluetoothGatt.readCharacteristic(characteristic);
+        }
     }
 
     /**
@@ -347,6 +438,11 @@ public class BleService extends Service {
             return;
         }
 
+        BluetoothGattDescriptor descriptor = characteristic
+                .getDescriptor(UUID_CHARACTERISTIC_GENERIC);
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_INDICATION_VALUE);
+        writeGattDescriptor(descriptor);
+        bluetoothGatt.setCharacteristicNotification(characteristic, true);
     }
 
     /**
@@ -356,7 +452,7 @@ public class BleService extends Service {
      */
     public void writeGattDescriptor(BluetoothGattDescriptor descriptor){
         //put the descriptor into the write queue
-        
+        descriptorQueue.add(descriptor);
     }
 
     /**
