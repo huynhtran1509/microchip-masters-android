@@ -112,6 +112,8 @@ public class BleService extends Service {
                 } else {
                     bluetoothAdapter.startLeScan(leScanCallback);
                 }
+            } else {
+                bleInterface.onBleDisabled();
             }
         }
     }

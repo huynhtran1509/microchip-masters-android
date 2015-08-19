@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class MainActivity extends AppCompatActivity implements BleInterface{
+public class MainActivity extends AppCompatActivity implements BleInterface {
 
     public static final String TAG = MainActivity.class.getSimpleName();
 
@@ -44,7 +44,6 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        handler = new Handler();
         progressBar = (ProgressBar) findViewById(R.id.progress_bar);
         startScanningButton = (Button) findViewById(R.id.start_scanning_button);
         adapter = new BleAdapter(this);
@@ -52,10 +51,11 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         listView.setAdapter(adapter);
 
         bleConnection = new MicrochipBleConnection();
+        handler = new Handler();
     }
 
     @Override
-    protected void onResume(){
+    protected void onResume() {
         super.onResume();
 
         // Bind to the BLE Service
@@ -64,7 +64,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
     }
 
     @Override
-    protected void onPause(){
+    protected void onPause() {
         super.onPause();
 
         if (bleService != null) {
@@ -74,7 +74,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         }
     }
 
-    public void onStartScanningButtonClicked(View view){
+    public void onStartScanningButtonClicked(View view) {
         if (bleService != null && bleService.isInitialized() && !bleService.isScanning()) {
             if (bleService.isBluetoothEnabled()) {
                 bleService.startScanning();
@@ -145,18 +145,19 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     }
 
-    class BleAdapter extends BaseAdapter{
+    class BleAdapter extends BaseAdapter {
 
         Context context;
 
         List<BluetoothDevice> devices;
-        public BleAdapter(Context context){
+
+        public BleAdapter(Context context) {
             this.context = context;
             this.devices = new ArrayList<>();
         }
 
-        public void addDevice(BluetoothDevice d){
-            if(!devices.contains(d)){
+        public void addDevice(BluetoothDevice d) {
+            if (!devices.contains(d)) {
                 devices.add(d);
             }
             this.notifyDataSetChanged();
@@ -187,17 +188,17 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         }
     }
 
-    private void showButton(){
+    private void showButton() {
         startScanningButton.setVisibility(View.VISIBLE);
         progressBar.setVisibility(View.GONE);
     }
 
-    private void showLoading(){
+    private void showLoading() {
         startScanningButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.VISIBLE);
     }
 
-    private void showContent(){
+    private void showContent() {
         startScanningButton.setVisibility(View.GONE);
         progressBar.setVisibility(View.GONE);
     }
