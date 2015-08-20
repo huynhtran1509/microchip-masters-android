@@ -75,7 +75,7 @@ public class BleService extends Service {
     }
 
     public void initialize(BleInterface bleInterface){
-
+        // Code Goes Here
     }
 
     /**
@@ -84,13 +84,14 @@ public class BleService extends Service {
     public void startScanning(){
         startBluetoothCrashResolver();
 
+        // Code Goes Here
     }
 
     /**
      * Stop Scanning
      */
     public void stopScanning(){
-
+        // Code Goes Here
     }
 
     /**
@@ -104,7 +105,7 @@ public class BleService extends Service {
          */
         @Override
         public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-
+            // Code Goes Here
         }
     }
 
@@ -125,6 +126,7 @@ public class BleService extends Service {
         public void onScanResult(int callbackType, ScanResult result) {
             super.onScanResult(callbackType, result);
 
+            // Code Goes Here
         }
 
         @Override

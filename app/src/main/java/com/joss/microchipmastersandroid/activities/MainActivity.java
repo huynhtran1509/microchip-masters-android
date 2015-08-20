@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -36,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     BleService bleService;
     MicrochipBleConnection bleConnection;
+    Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,32 +50,34 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(adapter);
 
-        bleConnection = new MicrochipBleConnection();
+        // Code Goes Here
     }
 
     @Override
     protected void onResume(){
         super.onResume();
 
+        // Code Goes Here
     }
 
     @Override
     protected void onPause(){
         super.onPause();
 
+        // Code Goes Here
     }
 
     public void onStartScanningButtonClicked(View view){
-
+        // Code Goes Here
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
         public void onServiceConnected(ComponentName className, IBinder binder) {
-
+            // Code Goes Here
         }
 
         public void onServiceDisconnected(ComponentName className) {
-
+            // Code Goes Here
         }
     }
 
@@ -84,7 +88,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface{
 
     @Override
     public void onBleScan(BluetoothDevice device) {
-
+        // Code Goes Here
     }
 
     @Override
