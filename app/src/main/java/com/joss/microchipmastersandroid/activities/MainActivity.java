@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -38,6 +39,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
 
     BleService bleService;
     MicrochipBleConnection bleConnection;
+    Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,9 +51,10 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
         adapter = new BleAdapter(this);
         listView = (ListView) findViewById(R.id.list_view);
         listView.setAdapter(adapter);
-
+        // Code Goes Here
 
         bleConnection = new MicrochipBleConnection();
+        handler = new Handler();
     }
 
     @Override
@@ -86,7 +89,7 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
 
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
+        // Code Goes Here
     }
 
     private class MicrochipBleConnection implements ServiceConnection {
@@ -107,10 +110,15 @@ public class MainActivity extends AppCompatActivity implements BleInterface, Ada
     }
 
     @Override
-    public void onBleScan(BluetoothDevice device) {
-        if(adapter.getCount() == 0)
-            showContent();
-        adapter.addDevice(device);
+    public void onBleScan(final BluetoothDevice device) {
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                if(adapter.getCount() == 0)
+                    showContent();
+                adapter.addDevice(device);
+            }
+        });
     }
 
     @Override

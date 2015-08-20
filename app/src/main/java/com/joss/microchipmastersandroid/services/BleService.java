@@ -118,14 +118,10 @@ public class BleService extends Service {
 
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
-//                    List<ScanFilter> filters = new ArrayList<>();
-//                    filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(UUID_SERVICE)).build());
-
                     ScanSettings scanSettings = new ScanSettings.Builder()
                             .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
                             .setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                             .build();
-//                    bluetoothScanner.startScan(filters, scanSettings, scanCallback);
                     bluetoothScanner.startScan(null, scanSettings, scanCallback);
                 }else{
                     bluetoothAdapter.startLeScan(leScanCallback);
@@ -221,6 +217,8 @@ public class BleService extends Service {
             return false;
         }
 
+        // Code Goes Here
+
         // Check to see if bluetooth is still enabled on device.
         return false;
     }
@@ -260,7 +258,7 @@ public class BleService extends Service {
          */
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState){
-
+            // Code Goes Here
         }
 
         /**
@@ -275,6 +273,8 @@ public class BleService extends Service {
          */
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status){
+
+            // Code Goes Here
 
             // Check to see if services got discovered successfully
 
@@ -295,7 +295,7 @@ public class BleService extends Service {
          */
         @Override
         public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status){
-
+            // Code Goes Here
         }
 
         /**
@@ -311,7 +311,7 @@ public class BleService extends Service {
          */
         @Override
         public void onDescriptorWrite(BluetoothGatt gatt, BluetoothGattDescriptor descriptor, int status) {
-
+            // Code Goes Here
         }
 
         /**
@@ -323,7 +323,7 @@ public class BleService extends Service {
          */
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic){
-
+            // Code Goes Here
         }
     }
 
@@ -334,7 +334,7 @@ public class BleService extends Service {
      * @param characteristic Bluetooth characteristic
      */
     public void readGattCharacteristic(BluetoothGattCharacteristic characteristic){
-
+        // Code Goes Here
     }
 
     /**
@@ -347,6 +347,7 @@ public class BleService extends Service {
             return;
         }
 
+        // Code Goes Here
     }
 
     /**
@@ -355,8 +356,10 @@ public class BleService extends Service {
      * @param descriptor Bluetooth Gatt Descriptor
      */
     public void writeGattDescriptor(BluetoothGattDescriptor descriptor){
+
+        // Code Goes Here
+
         //put the descriptor into the write queue
-        
     }
 
     /**
