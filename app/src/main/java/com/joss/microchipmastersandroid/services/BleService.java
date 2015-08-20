@@ -120,14 +120,10 @@ public class BleService extends Service {
 
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
 
-//                    List<ScanFilter> filters = new ArrayList<>();
-//                    filters.add(new ScanFilter.Builder().setServiceUuid(new ParcelUuid(UUID_SERVICE)).build());
-
                     ScanSettings scanSettings = new ScanSettings.Builder()
                             .setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
                             .setScanMode(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                             .build();
-//                    bluetoothScanner.startScan(filters, scanSettings, scanCallback);
                     bluetoothScanner.startScan(null, scanSettings, scanCallback);
                 }else{
                     bluetoothAdapter.startLeScan(leScanCallback);
